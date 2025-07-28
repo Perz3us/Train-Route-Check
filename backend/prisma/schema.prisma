@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Profile {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  role      String   @default("admin")
+  fullName  String?  @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdRoutes Route[] @relation("CreatedBy")
+
+  @@map("profiles")
+}
+
+model Route {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trainNumber String    @unique @map("train_number")
+  name        String
+  isActive    Boolean   @default(true) @map("is_active")
+  startTime   DateTime? @map("start_time") @db.Time
+  endTime     DateTime? @map("end_time") @db.Time
+  createdBy   String?   @map("created_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  creator         Profile?          @relation("CreatedBy", fields: [createdBy], references: [id])
+  routeStations   RouteStation[]
+  liveLocations   LiveLocation[]
+  locationHistory LocationHistory[]
+
+  @@map("routes")
+}
+
+model Station {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  code      String   @unique
+  latitude  Decimal  @db.Decimal(10, 8)
+  longitude Decimal  @db.Decimal(11, 8)
+  city      String
+  state     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  routeStations RouteStation[]
+
+  @@map("stations")
+}
+
+model RouteStation {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  routeId           String   @map("route_id") @db.Uuid
+  stationId         String   @map("station_id") @db.Uuid
+  sequence          Int
+  distanceFromStart Decimal  @map("distance_from_start") @db.Decimal(8, 2)
+  estimatedDuration Int?     @map("estimated_duration")
+  stopDuration      Int      @default(2) @map("stop_duration")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  route   Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  station Station @relation(fields: [stationId], references: [id])
+
+  @@unique([routeId, sequence])
+  @@map("route_stations")
+}
+
+model LiveLocation {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trainNumber    String   @map("train_number")
+  latitude       Decimal  @db.Decimal(10, 8)
+  longitude      Decimal  @db.Decimal(11, 8)
+  speed          Decimal? @default(0) @db.Decimal(5, 2)
+  heading        Decimal? @default(0) @db.Decimal(5, 2)
+  accuracy       Decimal? @default(0) @db.Decimal(5, 2)
+  deviceId       String?  @map("device_id")
+  batteryLevel   Int?     @map("battery_level")
+  signalStrength Int?     @map("signal_strength")
+  timestamp      DateTime
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  route Route? @relation(fields: [trainNumber], references: [trainNumber])
+
+  @@index([trainNumber])
+  @@index([timestamp])
+  @@map("live_locations")
+}
+
+model LocationHistory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trainNumber String   @map("train_number")
+  latitude    Decimal  @db.Decimal(10, 8)
+  longitude   Decimal  @db.Decimal(11, 8)
+  speed       Decimal? @default(0) @db.Decimal(5, 2)
+  heading     Decimal? @default(0) @db.Decimal(5, 2)
+  deviceId    String?  @map("device_id")
+  timestamp   DateTime
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  route Route? @relation(fields: [trainNumber], references: [trainNumber])
+
+  @@index([trainNumber, timestamp])
+  @@map("location_history")
+}
