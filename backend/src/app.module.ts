@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { StationsModule } from './stations/stations.module';
+
 import configuration from './config/configuration';
 import { PrismaModule } from './database/prisma/prisma.module';
+import { StationsModule } from './modules/stations/stations.module';
 
 @Module({
   imports: [

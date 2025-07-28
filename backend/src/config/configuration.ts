@@ -9,6 +9,14 @@ interface Config {
     secret: string;
     expiresIn: string;
   };
+  graphql: {
+    playground: boolean;
+    introspection: boolean;
+    subscriptions: {
+      'subscriptions-transport-ws': boolean;
+      'graphql-ws': boolean;
+    };
+  };
 }
 
 export default (): Config => ({
@@ -21,5 +29,14 @@ export default (): Config => ({
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  },
+
+  graphql: {
+    playground: process.env.NODE_ENV === 'development',
+    introspection: true,
+    subscriptions: {
+      'subscriptions-transport-ws': true,
+      'graphql-ws': true,
+    },
   },
 });
