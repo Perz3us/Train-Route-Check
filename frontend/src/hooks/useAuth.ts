@@ -70,11 +70,46 @@ export function useAuth() {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to login');
+      }
+
+      const { tokens, user: profile } = result;
+
+      if (!tokens || !profile) {
+        throw new Error('Invalid login response from server');
+      }
+
+      // Set the session in Supabase client
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken,
+      });
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      // Manually update the user and profile state
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setProfile(profile);
+
+      return { data: { user, profile }, error: null };
+    } catch (error: any) {
+      return { data: null, error: { message: error.message } };
+    }
   };
 
   const signOut = async () => {
