@@ -1,39 +1,44 @@
 import {
   IsString,
-  IsNotEmpty,
   IsOptional,
   IsBoolean,
-  Matches,
   IsArray,
   ValidateNested,
+  IsUUID,
+  IsNumber,
+  Min,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class RouteStationDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   stationId: string;
 
-  @IsNotEmpty()
+  @IsNumber()
+  @Min(1)
   sequence: number;
 
-  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
   distanceFromStart: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
   estimatedDuration?: number;
 
   @IsOptional()
-  stopDuration?: number = 2;
+  @IsNumber()
+  @Min(0)
+  stopDuration?: number;
 }
 
 export class CreateRouteDto {
   @IsString()
-  @IsNotEmpty()
   trainNumber: string;
 
   @IsString()
-  @IsNotEmpty()
   name: string;
 
   @IsOptional()
@@ -41,12 +46,18 @@ export class CreateRouteDto {
   isActive?: boolean = true;
 
   @IsOptional()
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+  @IsString()
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'startTime must be in HH:MM format (e.g., 06:30)',
+  })
   startTime?: string;
 
   @IsOptional()
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-  endTime?: string;
+  @IsString()
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'endTime must be in HH:MM format (e.g., 09:45)',
+  })
+  endTime?: string; // Format: "HH:MM"
 
   @IsArray()
   @ValidateNested({ each: true })

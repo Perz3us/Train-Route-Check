@@ -18,6 +18,7 @@ model Profile {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   createdRoutes Route[] @relation("CreatedBy")
+  auditLogs     AuditLog[]
 
   @@map("profiles")
 }
@@ -111,4 +112,25 @@ model LocationHistory {
 
   @@index([trainNumber, timestamp])
   @@map("location_history")
+}
+
+model AuditLog {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  action    String   @db.VarChar(50)
+  tableName String   @map("table_name") @db.VarChar(50)
+  recordId  String?  @map("record_id") @db.Uuid
+  oldValues String?  @map("old_values") // JSON string
+  newValues String?  @map("new_values") // JSON string
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user Profile? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([tableName])
+  @@index([createdAt])
+  @@map("audit_log")
 }

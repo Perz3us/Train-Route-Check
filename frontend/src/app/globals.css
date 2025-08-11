@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 10% 0%; /* True black */
+    --foreground: 210 20% 100%; /* Pure white */
+    --card: 220 10% 12%; /* Slightly lighter dark grey for cards */
+    --card-foreground: 210 20% 98%;
+    --popover: 220 10% 12%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 210 90% 50%; /* A vibrant blue */
+    --primary-foreground: 210 20% 98%; /* White text on blue */
+    --secondary: 220 10% 20%; /* Darker grey for secondary elements */
+    --secondary-foreground: 210 20% 98%;
+    --muted: 220 10% 25%; /* Even darker grey for muted text/elements */
+    --muted-foreground: 210 10% 70%; /* Lighter grey for muted text */
+    --accent: 210 90% 50%; /* Same as primary for accent */
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 80% 60%; /* Red for destructive actions */
+    --destructive-foreground: 210 20% 98%;
+    --border: 220 10% 30%; /* Dark grey border */
+    --input: 220 10% 20%; /* Dark grey input background */
+    --ring: 210 90% 50%; /* Blue ring */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 220 10% 0%; /* True black */
+    --foreground: 210 20% 100%;
+    --card: 220 10% 18%;
+    --card-foreground: 210 20% 98%;
+    --popover: 220 10% 18%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 210 90% 50%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 220 10% 25%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 220 10% 30%;
+    --muted-foreground: 210 10% 75%;
+    --accent: 210 90% 50%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 80% 60%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 220 10% 35%;
+    --input: 220 10% 25%;
+    --ring: 210 90% 50%;
+  }
+}
