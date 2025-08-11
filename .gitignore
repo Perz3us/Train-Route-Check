@@ -93,13 +93,14 @@ frontend/out/
 .env.development.local
 .env.production.local
 .env.test.local
+
 .env.local
 
 # Backend environment variables
 backend/.env
 backend/.env.development.local
 backend/.env.production.local
-backend/.env.test.local
+backend/.env.test
 backend/.env.local
 
 # Frontend environment variables (for future use)
