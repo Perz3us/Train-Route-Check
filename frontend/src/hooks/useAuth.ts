@@ -30,17 +30,11 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    console.log('useAuth: useEffect started');
     const checkUser = async () => {
       setLoading(true);
-      console.log('useAuth: checkUser started');
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      console.log('useAuth: session fetched', session);
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       if (session?.user) {
-        console.log('useAuth: user found, fetching profile');
         await fetchProfile(session.user.id);
       } else {
         setProfile(null);
@@ -50,17 +44,18 @@ export function useAuth() {
 
     checkUser();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('useAuth: onAuthStateChange event', event);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setLoading(true);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
       }
-    });
+    );
 
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
@@ -73,7 +68,6 @@ export function useAuth() {
   };
 
   const signIn = async (email: string, password: string) => {
-    setLoading(true);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -104,19 +98,15 @@ export function useAuth() {
         throw sessionError;
       }
 
-      // onAuthStateChange will handle setting user and profile.
+      // The onAuthStateChange listener will handle the state updates.
       return { error: null };
     } catch (error: any) {
       return { error: { message: error.message } };
-    } finally {
-      setLoading(false);
     }
   };
 
   const signOut = async () => {
-    setLoading(true);
     const { error } = await supabase.auth.signOut();
-    setLoading(false);
     return { error };
   };
 
