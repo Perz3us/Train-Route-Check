@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { User, AuthResponse } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -10,7 +9,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    console.log("fetchProfile: Attempting to fetch profile for userId:", userId);
+    console.log('fetchProfile: Attempting to fetch profile for userId:', userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -18,58 +17,63 @@ export function useAuth() {
       .single();
 
     if (error) {
-      console.error("fetchProfile: Error fetching profile:", error);
-      setProfile(null); // Ensure profile is null on error
+      console.error('fetchProfile: Error fetching profile:', error);
+      setProfile(null);
     } else if (data) {
-      console.log("fetchProfile: Profile data received:", data);
+      console.log('fetchProfile: Profile data received:', data);
       setProfile(data);
     } else {
-      console.log("fetchProfile: No profile data found for userId:", userId);
-      setProfile(null); // No data found
+      console.log('fetchProfile: No profile data found for userId:', userId);
+      setProfile(null);
     }
     return data;
   }, []);
 
   useEffect(() => {
-    console.log("useAuth: useEffect started");
+    console.log('useAuth: useEffect started');
     const checkUser = async () => {
-      console.log("useAuth: checkUser started");
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("useAuth: session fetched", session);
+      setLoading(true);
+      console.log('useAuth: checkUser started');
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      console.log('useAuth: session fetched', session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        console.log("useAuth: user found, fetching profile");
+        console.log('useAuth: user found, fetching profile');
         await fetchProfile(session.user.id);
-        setLoading(false);
       } else {
-        setLoading(false);
+        setProfile(null);
       }
+      setLoading(false);
     };
 
     checkUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("useAuth: onAuthStateChange event", event);
-        setLoading(true);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-          setLoading(false);
-        } else {
-          setLoading(false);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('useAuth: onAuthStateChange event', event);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
       }
-    );
+    });
 
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  const signUp = async (email: string, password: string): Promise<AuthResponse> => {
+  const signUp = async (
+    email: string,
+    password: string
+  ): Promise<AuthResponse> => {
     return supabase.auth.signUp({ email, password });
   };
 
   const signIn = async (email: string, password: string) => {
+    setLoading(true);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -85,13 +89,12 @@ export function useAuth() {
         throw new Error(result.message || 'Failed to login');
       }
 
-      const { tokens, user: profile } = result;
+      const { tokens } = result;
 
-      if (!tokens || !profile) {
+      if (!tokens) {
         throw new Error('Invalid login response from server');
       }
 
-      // Set the session in Supabase client
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
@@ -101,19 +104,19 @@ export function useAuth() {
         throw sessionError;
       }
 
-      // Manually update the user and profile state
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setProfile(profile);
-
-      return { data: { user, profile }, error: null };
+      // onAuthStateChange will handle setting user and profile.
+      return { error: null };
     } catch (error: any) {
-      return { data: null, error: { message: error.message } };
+      return { error: { message: error.message } };
+    } finally {
+      setLoading(false);
     }
   };
 
   const signOut = async () => {
+    setLoading(true);
     const { error } = await supabase.auth.signOut();
+    setLoading(false);
     return { error };
   };
 
