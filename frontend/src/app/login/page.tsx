@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -6,21 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function LoginPage() {
-  const { signIn, user, isAdmin, loading } = useAuth();
-  const router = useRouter();
+  const { signIn, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // If the user is already logged in and an admin, redirect them away from the login page.
-    console.log('Login Page useEffect', { user, isAdmin, loading });
-    if (!loading && user && isAdmin) {
-      router.push('/admin');
-    }
-  }, [user, isAdmin, router, loading]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,7 +23,6 @@ export default function LoginPage() {
     if (signInError) {
       setError(signInError.message);
     }
-    // The useEffect above will handle the redirect on successful login when the user/isAdmin state updates.
   };
 
   return (
@@ -52,6 +40,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 placeholder="Enter your email"
+                disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -61,14 +50,16 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 placeholder="Enter your password"
+                disabled={loading}
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit">Login</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Logging in...' : 'Login'}
+            </Button>
           </form>
         </CardContent>
       </Card>
     </div>
   );
 }
-
