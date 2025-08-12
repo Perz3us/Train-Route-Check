@@ -57,6 +57,7 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
+    console.log('signIn: called');
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -65,8 +66,11 @@ export function useAuth() {
         },
         body: JSON.stringify({ email, password }),
       });
+      console.log('signIn: fetch response', response);
 
       const result = await response.json();
+      console.log('signIn: fetch result', result);
+
 
       if (!response.ok) {
         throw new Error(result.message || 'Failed to login');
@@ -78,10 +82,12 @@ export function useAuth() {
         throw new Error('Invalid login response from server');
       }
 
+      console.log('signIn: setting session');
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
       });
+      console.log('signIn: setSession done', { sessionData, sessionError });
 
       if (sessionError) {
         throw sessionError;
@@ -90,15 +96,19 @@ export function useAuth() {
       setUser(sessionData.user);
       setProfile(profileData);
 
+      console.log('signIn: checking for admin role', profileData.role);
       if (profileData.role === 'admin') {
+        console.log('signIn: redirecting to /admin');
         router.push('/admin');
       }
 
       return { error: null };
     } catch (error: any) {
+      console.error('signIn: error', error);
       return { error: { message: error.message } };
     } finally {
       setLoading(false);
+      console.log('signIn: finished');
     }
   };
 

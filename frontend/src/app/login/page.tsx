@@ -14,11 +14,13 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    console.log('LoginPage: handleSubmit called');
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
     const { error: signInError } = await signIn(email, password);
+    console.log('LoginPage: signIn completed', { signInError });
 
     if (signInError) {
       setError(signInError.message);
