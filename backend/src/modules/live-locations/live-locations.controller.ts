@@ -9,11 +9,14 @@ import {
   Query,
   Logger,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { LiveLocationsService } from './live-locations.service';
 import { LiveLocationDto } from './dto/live-location.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('live-locations')
+@UseGuards(JwtAuthGuard)
 export class LiveLocationsController {
   private readonly logger = new Logger(LiveLocationsController.name);
 

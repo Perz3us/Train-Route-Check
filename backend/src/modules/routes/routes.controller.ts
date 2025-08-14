@@ -12,11 +12,14 @@ import {
   ParseBoolPipe,
   ParseIntPipe,
   DefaultValuePipe,
+  UseGuards,
 } from '@nestjs/common';
 import { RoutesService } from './routes.service';
 import { CreateRouteDto, UpdateRouteDto } from './dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('routes')
+@UseGuards(JwtAuthGuard)
 export class RoutesController {
   constructor(private readonly routesService: RoutesService) {}
 

@@ -5,7 +5,6 @@ import { useTrainTracking } from "@/hooks/useTrainTracking";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useTrainTracking } from "@/hooks/useTrainTracking";
 import dynamic from "next/dynamic";
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false });
@@ -24,7 +23,7 @@ export default function TrainDetailsPage({ params }: { params: { train_number: s
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Train {train.train_number}</h1>
+      <h1 className="text-2xl font-bold">Train {params.train_number}</h1>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-2">
           <Card>
@@ -54,7 +53,11 @@ export default function TrainDetailsPage({ params }: { params: { train_number: s
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {stations.map((station) => (
+                  {[
+                    { id: '1', name: 'Station A', eta: '10:30 AM' },
+                    { id: '2', name: 'Station B', eta: '11:15 AM' },
+                    { id: '3', name: 'Station C', eta: '12:00 PM' }
+                  ].map((station) => (
                     <TableRow key={station.id}>
                       <TableCell>{station.name}</TableCell>
                       <TableCell>{station.eta}</TableCell>

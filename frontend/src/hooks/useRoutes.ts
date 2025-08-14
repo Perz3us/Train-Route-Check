@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import type { Route } from '@/lib/supabase';
 
 export function useRoutes() {
@@ -9,35 +8,19 @@ export function useRoutes() {
   const [loading, setLoading] = useState(true);
 
   const fetchRoutes = async () => {
-    const { data, error } = await supabase
-      .from('routes')
-      .select(
-        `
-        *,
-        route_stations (
-          id,
-          sequence,
-          distance_from_start,
-          estimated_duration,
-          stop_duration,
-          stations (
-            id,
-            name,
-            code,
-            latitude,
-            longitude,
-            city,
-            state
-          )
-        )
-      `,
-      )
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setRoutes(data as any);
+    try {
+      const response = await fetch('/api/routes');
+      const result = await response.json();
+      const data = result.data || result;
+      
+      if (response.ok) {
+        setRoutes(data as any);
+      }
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -45,42 +28,67 @@ export function useRoutes() {
   }, []);
 
   const createRoute = async (routeData: any) => {
-    const { data, error } = await supabase
-      .from('routes')
-      .insert(routeData)
-      .select()
-      .single();
-
-    if (!error) {
-      await fetchRoutes(); // Refresh the list
+    try {
+      const response = await fetch('/api/routes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(routeData),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        await fetchRoutes(); // Refresh the list
+        return { data: result, error: null };
+      } else {
+        return { data: null, error: new Error(result.message || 'Failed to create route') };
+      }
+    } catch (error: any) {
+      return { data: null, error };
     }
-
-    return { data, error };
   };
 
   const updateRoute = async (id: string, updates: any) => {
-    const { data, error } = await supabase
-      .from('routes')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (!error) {
-      await fetchRoutes(); // Refresh the list
+    try {
+      const response = await fetch(`/api/routes/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        await fetchRoutes(); // Refresh the list
+        return { data: result, error: null };
+      } else {
+        return { data: null, error: new Error(result.message || 'Failed to update route') };
+      }
+    } catch (error: any) {
+      return { data: null, error };
     }
-
-    return { data, error };
   };
 
   const deleteRoute = async (id: string) => {
-    const { error } = await supabase.from('routes').delete().eq('id', id);
-
-    if (!error) {
-      await fetchRoutes(); // Refresh the list
+    try {
+      const response = await fetch(`/api/routes/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        await fetchRoutes(); // Refresh the list
+        return { error: null };
+      } else {
+        const result = await response.json();
+        return { error: new Error(result.message || 'Failed to delete route') };
+      }
+    } catch (error: any) {
+      return { error };
     }
-
-    return { error };
   };
 
   return {

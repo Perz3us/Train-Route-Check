@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 
 interface SystemMetrics {
   activeTrains: number;
   avgBattery: number;
   avgSignal: number;
-  routesActive: number;
+  totalRoutes: number;
+  activeRoutes: number;
+  totalStations: number;
+  totalLocationPoints: number;
 }
 
 export function useSystemMetrics() {
@@ -14,41 +16,29 @@ export function useSystemMetrics() {
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      // Get real-time train count
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const { count: activeTrains } = await supabase
-        .from('live_locations')
-        .select('train_number', { count: 'exact', head: true })
-        .gte('timestamp', fiveMinutesAgo);
-
-      // Get route performance (in this case, just the number of active routes)
-      const { count: routesActive } = await supabase
-        .from('routes')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_active', true);
-
-      // Get system health
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { data: systemHealth, error } = await supabase
-        .from('live_locations')
-        .select('device_id, battery_level, signal_strength')
-        .gte('timestamp', tenMinutesAgo);
-
-      if (error) {
-        console.error('Error fetching system health:', error);
+      try {
+        const response = await fetch('/api/metrics');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch metrics: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        setMetrics({
+          activeTrains: data.activeTrains || 0,
+          avgBattery: data.avgBattery || 0,
+          avgSignal: data.avgSignal || 0,
+          totalRoutes: data.totalRoutes || 0,
+          activeRoutes: data.activeRoutes || 0,
+          totalStations: data.totalStations || 0,
+          totalLocationPoints: data.totalLocationPoints || 0,
+        });
+      } catch (error) {
+        console.error('Error fetching system metrics:', error);
+      } finally {
+        setLoading(false);
       }
-
-      const avgBattery = systemHealth?.reduce((sum, d) => sum + (d.battery_level || 0), 0) / (systemHealth?.length || 1);
-      const avgSignal = systemHealth?.reduce((sum, d) => sum + (d.signal_strength || 0), 0) / (systemHealth?.length || 1);
-
-      setMetrics({
-        activeTrains: activeTrains || 0,
-        routesActive: routesActive || 0,
-        avgBattery: avgBattery || 0,
-        avgSignal: avgSignal || 0,
-      });
-
-      setLoading(false);
     };
 
     fetchMetrics();

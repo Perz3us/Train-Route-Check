@@ -98,12 +98,26 @@ export class AuthService {
       .update({ updated_at: new Date().toISOString() })
       .eq('id', data.user.id);
 
-    // Generate tokens (Supabase provides these, but we can also generate our own if needed)
+    // Generate our own JWT tokens instead of using Supabase tokens
+    const payload = { 
+      sub: data.user.id, 
+      email: data.user.email,
+      role: profileData.role
+    };
+    
+    const accessToken = this.jwtService.sign(payload);
+    
+    // For refresh token, we'll use a simple approach for now
+    // In a production environment, you might want to store refresh tokens in a database
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '30d',
+    });
+
     const tokens = {
-      accessToken: data.session?.access_token,
-      refreshToken: data.session?.refresh_token,
-      expiresIn: data.session?.expires_in,
-      tokenType: data.session?.token_type,
+      accessToken,
+      refreshToken,
+      expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
+      tokenType: 'Bearer',
     };
 
     return {
@@ -123,22 +137,8 @@ export class AuthService {
   }
 
   async logout(accessToken: string): Promise<{ message: string }> {
-    const supabase = this.supabase.client;
-    
-    // Set the auth session
-    const { data, error } = await supabase.auth.getUser(accessToken);
-    
-    if (error || !data?.user) {
-      throw new BadRequestException('Invalid access token');
-    }
-    
-    // Sign out
-    const { error: signOutError } = await supabase.auth.signOut();
-    
-    if (signOutError) {
-      throw new BadRequestException(signOutError.message);
-    }
-
+    // In a more secure implementation, you might want to invalidate the token
+    // For now, we'll just return a success message
     return { message: 'Logged out successfully' };
   }
 
@@ -170,28 +170,34 @@ export class AuthService {
   }
 
   async refreshTokens(refreshToken: string): Promise<{ tokens: any }> {
-    const supabase = this.supabase.client;
-    
-    // Refresh session
-    const { data, error } = await supabase.auth.refreshSession({
-      refresh_token: refreshToken,
-    });
+    try {
+      // Verify the refresh token
+      const payload = this.jwtService.verify(refreshToken);
+      
+      // Generate new access token
+      const newPayload = { 
+        sub: payload.sub, 
+        email: payload.email,
+        role: payload.role
+      };
+      
+      const accessToken = this.jwtService.sign(newPayload);
+      
+      // Generate new refresh token
+      const newRefreshToken = this.jwtService.sign(newPayload, {
+        expiresIn: '30d',
+      });
 
-    if (error) {
+      const tokens = {
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
+        tokenType: 'Bearer',
+      };
+
+      return { tokens };
+    } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-
-    if (!data.session) {
-      throw new UnauthorizedException('Failed to refresh session');
-    }
-
-    const tokens = {
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-      expiresIn: data.session.expires_in,
-      tokenType: data.session.token_type,
-    };
-
-    return { tokens };
   }
 }

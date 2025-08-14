@@ -1,8 +1,38 @@
 import { useEffect, useState, useCallback } from 'react';
-import { User, AuthResponse } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
-import type { Profile } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
+
+// Define types for our custom authentication
+interface User {
+  id: string;
+  email: string;
+}
+
+interface Profile {
+  id: string;
+  email: string;
+  fullName: string;
+  role: string;
+  avatarUrl?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
+  lastLoginAt?: Date | null;
+}
+
+interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  tokenType: string;
+}
+
+interface LoginResponse {
+  tokens: AuthTokens;
+  user: Profile;
+  message: string;
+  timestamp: Date;
+}
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -10,54 +40,66 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching profile:', error);
-      setProfile(null);
-      return null;
+  // Get token from cookies
+  const getToken = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      return Cookies.get('authToken');
     }
-
-    setProfile(data);
-    return data;
+    return null;
   }, []);
 
+  // Save token to cookies
+  const saveToken = useCallback((token: string) => {
+    if (typeof window !== 'undefined') {
+      Cookies.set('authToken', token, { expires: 7, path: '/', sameSite: 'strict' });
+    }
+  }, []);
+
+  // Remove token from cookies
+  const removeToken = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      Cookies.remove('authToken', { path: '/' });
+    }
+  }, []);
+
+  // Check user authentication status
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
+      setLoading(true);
+      const token = getToken();
+      if (token) {
+        // Validate token with backend
+        try {
+          const response = await fetch('/api/auth/profile', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const profileData = await response.json();
+            setUser({ id: profileData.id, email: profileData.email });
+            setProfile(profileData);
+          } else {
+            // Token is invalid, remove it
+            removeToken();
+          }
+        } catch (error) {
+          console.error('Error validating token:', error);
+          removeToken();
+        }
       }
       setLoading(false);
     };
 
     checkUser();
+  }, [getToken, removeToken]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (event === 'SIGNED_IN' && session) {
-        fetchProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]);
-
-  const signUp = async (email: string, password: string): Promise<AuthResponse> => {
-    return supabase.auth.signUp({ email, password });
-  };
-
+  // Sign in function
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    console.log('signIn: called');
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -66,55 +108,83 @@ export function useAuth() {
         },
         body: JSON.stringify({ email, password }),
       });
-      console.log('signIn: fetch response', response);
 
-      const result = await response.json();
-      console.log('signIn: fetch result', result);
-
+      const result: LoginResponse = await response.json();
 
       if (!response.ok) {
         throw new Error(result.message || 'Failed to login');
       }
 
-      const { tokens, user: profileData } = result;
-
-      if (!tokens || !profileData) {
+      if (!result.tokens || !result.user) {
         throw new Error('Invalid login response from server');
       }
 
-      console.log('signIn: setting session');
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-      });
-      console.log('signIn: setSession done', { sessionData, sessionError });
+      // Save token
+      saveToken(result.tokens.accessToken);
 
-      if (sessionError) {
-        throw sessionError;
-      }
+      // Set user and profile
+      setUser({ id: result.user.id, email: result.user.email });
+      setProfile(result.user);
 
-      setUser(sessionData.user);
-      setProfile(profileData);
-
-      console.log('signIn: checking for admin role', profileData.role);
-      if (profileData.role === 'admin') {
-        console.log('signIn: redirecting to /admin');
-        router.push('/admin');
-      }
-
-      return { error: null };
+      return { error: null, user: result.user };
     } catch (error: any) {
       console.error('signIn: error', error);
       return { error: { message: error.message } };
     } finally {
       setLoading(false);
-      console.log('signIn: finished');
     }
   };
 
+  // Sign up function
+  const signUp = async (email: string, password: string, fullName: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, fullName }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to register');
+      }
+
+      return { error: null, data: result };
+    } catch (error: any) {
+      console.error('signUp: error', error);
+      return { error: { message: error.message } };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign out function
   const signOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    try {
+      const token = getToken();
+      if (token) {
+        // Call backend logout endpoint
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      // Clear local state and token
+      removeToken();
+      setUser(null);
+      setProfile(null);
+      router.push('/login');
+    }
   };
 
   return {

@@ -6,24 +6,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const { signIn, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    console.log('LoginPage: handleSubmit called');
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const { error: signInError } = await signIn(email, password);
-    console.log('LoginPage: signIn completed', { signInError });
+    const { error: signInError, user: loggedInUser } = await signIn(email, password);
 
     if (signInError) {
       setError(signInError.message);
+    } else if (loggedInUser) {
+      // Redirect based on role using the loggedInUser object directly
+      if (loggedInUser.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     }
   };
 
