@@ -8,43 +8,26 @@ export class LiveLocationsService {
 
   constructor(private prisma: PrismaService) {}
 
-  async createOrUpdateLocation(locationDto: LiveLocationDto) {
-    try {
-      const existingLocation = await this.prisma.liveLocation.findFirst({
-        where: { trainNumber: locationDto.trainNumber },
-      });
+  // createOrUpdateLocation has been removed to enforce data ingestion via Kafka
+  // async createOrUpdateLocation(locationDto: LiveLocationDto) { ... }
 
-      const data = {
-        trainNumber: locationDto.trainNumber,
-        latitude: locationDto.latitude,
-        longitude: locationDto.longitude,
-        speed: locationDto.speed,
-        heading: locationDto.heading,
-        accuracy: locationDto.accuracy,
-        deviceId: locationDto.deviceId,
-        batteryLevel: locationDto.batteryLevel,
-        signalStrength: locationDto.signalStrength,
-        timestamp: locationDto.timestamp,
-      };
-
-      if (existingLocation) {
-        const result = await this.prisma.liveLocation.update({
-          where: { id: existingLocation.id },
-          data,
-        });
-        this.logger.log(`Successfully updated live location for train ${locationDto.trainNumber}`);
-        return result;
-      } else {
-        const result = await this.prisma.liveLocation.create({
-          data,
-        });
-        this.logger.log(`Successfully created live location for train ${locationDto.trainNumber}`);
-        return result;
-      }
-    } catch (error) {
-      this.logger.error(`Exception in createOrUpdateLocation: ${error.message}`);
-      throw error;
-    }
+  private mapToSnakeCase(location: any) {
+    if (!location) return null;
+    return {
+      id: location.id,
+      train_number: location.trainNumber,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      speed: location.speed,
+      heading: location.heading,
+      accuracy: location.accuracy,
+      device_id: location.deviceId,
+      battery_level: location.batteryLevel,
+      signal_strength: location.signalStrength,
+      timestamp: location.timestamp,
+      created_at: location.createdAt,
+      updated_at: location.updatedAt,
+    };
   }
 
   async getLatestLocation(trainNumber: string) {
@@ -58,9 +41,23 @@ export class LiveLocationsService {
         throw new NotFoundException(`No location found for train ${trainNumber}`);
       }
 
-      return location;
+      return this.mapToSnakeCase(location);
     } catch (error) {
       this.logger.error(`Exception in getLatestLocation: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async getAllLatestLocations() {
+    try {
+      // Since we update the same record for each train, getting all records gives us the latest for all trains
+      const locations = await this.prisma.liveLocation.findMany({
+        orderBy: { timestamp: 'desc' },
+      });
+
+      return locations.map(loc => this.mapToSnakeCase(loc));
+    } catch (error) {
+      this.logger.error(`Exception in getAllLatestLocations: ${error.message}`);
       throw error;
     }
   }
@@ -73,7 +70,7 @@ export class LiveLocationsService {
         take: limit,
       });
 
-      return locations;
+      return locations.map(loc => this.mapToSnakeCase(loc));
     } catch (error) {
       this.logger.error(`Exception in getLocationsByTrain: ${error.message}`);
       throw error;

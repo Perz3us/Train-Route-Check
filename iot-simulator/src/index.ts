@@ -10,24 +10,14 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 const trainConfigs: TrainConfig[] = [
   {
     trainNumber: 'TRN_001',
-    deviceId: 'DEVICE_001',
+    deviceId: 'DEVICE_TRN_001',
     startPosition: {
-      latitude: 12.9716,
-      longitude: 77.5946,
+      latitude: 6.9333, // Colombo Fort
+      longitude: 79.8500,
     },
-    route: [], // In a real implementation, this would contain route information
-    updateInterval: 5000, // 5 seconds
-  },
-  {
-    trainNumber: 'TRN_002',
-    deviceId: 'DEVICE_002',
-    startPosition: {
-      latitude: 13.0827,
-      longitude: 80.2707,
-    },
-    route: [],
-    updateInterval: 7000, // 7 seconds
-  },
+    route: [], 
+    updateInterval: 1000, // 1 second for smoother updates
+  }
 ];
 
 // Create and start simulators for each train

@@ -38,16 +38,6 @@ export class LiveLocationDto {
   @IsString()
   deviceId?: string;
 
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(100)
-  batteryLevel?: number;
-
-  @IsOptional()
-  @IsInt()
-  signalStrength?: number;
-
   @IsISO8601()
   timestamp: string;
 }

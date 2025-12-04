@@ -33,5 +33,5 @@ export class CreateStationInput {
   @IsString()
   @IsNotEmpty()
   @Length(2, 100)
-  state: string;
+  province: string;
 }

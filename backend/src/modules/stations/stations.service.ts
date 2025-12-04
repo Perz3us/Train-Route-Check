@@ -139,7 +139,7 @@ export class StationsService {
             { name: { contains: query, mode: 'insensitive' } },
             { code: { contains: query, mode: 'insensitive' } },
             { city: { contains: query, mode: 'insensitive' } },
-            { state: { contains: query, mode: 'insensitive' } },
+            { province: { contains: query, mode: 'insensitive' } },
           ],
         },
         orderBy: {

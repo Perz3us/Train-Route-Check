@@ -14,16 +14,17 @@ const protectedRoutes = [
 // Define which routes are public (don't require authentication)
 const publicRoutes = [
   '/login',
-  '/register',
   '/forgot-password',
   '/reset-password',
+  '/track',
+  '/tracking',
 ];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Check if the route is public
-  const isPublicRoute = publicRoutes.includes(pathname) || 
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || 
                         pathname.startsWith('/api/') || 
                         pathname.startsWith('/_next/') ||
                         pathname.startsWith('/static/') ||
@@ -39,7 +40,8 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('authToken')?.value;
   
   // If it's a protected route and there's no token, redirect to login
-  if (isProtectedRoute && !token) {
+  // But only if it's NOT a public route (in case of overlap)
+  if (isProtectedRoute && !isPublicRoute && !token) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);

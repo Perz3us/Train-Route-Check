@@ -1,159 +1,143 @@
-# Train Route Schedule Checker - System Design Document (Updated with Supabase)
+Train Route Schedule Checker - System Design Document (Updated with Supabase for Sri Lanka)
 
-## 1. Project Overview
+1. Project Overview
+   1.1 Project Description
+   A real-time train tracking and route management system tailored for Sri Lankan Railways, allowing administrators to manage train routes and enabling public users to track train locations and get estimated arrival times.
+   1.2 Key Features
 
-### 1.1 Project Description
+Admin Portal: Route management, station addition, distance configuration
+IoT Integration: Real-time location tracking from train devices
+Public Interface: Live train tracking and ETA calculations
+Real-time Updates: Supabase Realtime for live location streaming
 
-A real-time train tracking and route management system that allows administrators to manage train routes and enables public users to track train locations and get estimated arrival times.
+1.3 Target Users
 
-### 1.2 Key Features
+System Administrators: Sri Lankan Railways operators managing routes
+General Public: Passengers tracking train locations
+IoT Devices: GPS-enabled devices on trains
 
-- **Admin Portal**: Route management, station addition, distance configuration
-- **IoT Integration**: Real-time location tracking from train devices
-- **Public Interface**: Live train tracking and ETA calculations
-- **Real-time Updates**: Supabase Realtime for live location streaming
+2. System Architecture
+   2.1 Technology Stack
+   Backend
 
-### 1.3 Target Users
+Database & Backend: Supabase (PostgreSQL + Real-time + Auth + API)
+Additional Backend: NestJS with TypeScript (for complex business logic)
+Authentication: Supabase Auth with Row Level Security (RLS)
+Real-time: Supabase Realtime (WebSocket-based)
+API: Supabase Auto-generated REST API + Custom NestJS endpoints
+File Storage: Supabase Storage
 
-- **System Administrators**: Railway operators managing routes
-- **General Public**: Passengers tracking train locations
-- **IoT Devices**: GPS-enabled devices on trains
+Frontend
 
-## 2. System Architecture
+Framework: Next.js 14+ with App Router
+Styling: Tailwind CSS
+State Management: TanStack Query (React Query)
+Supabase Client: @supabase/supabase-js
+Maps: Leaflet or Google Maps API
+Real-time: Supabase Realtime subscriptions
 
-### 2.1 Technology Stack
+Infrastructure
 
-#### Backend
+Development: Docker containers (optional for local NestJS)
+Database: Supabase PostgreSQL (Cloud-hosted)
+Authentication: Supabase Auth
+Real-time: Supabase Realtime
+File Storage: Supabase Storage
+Hosting: Vercel (Frontend) + Railway/Render (NestJS if needed)
 
-- **Database & Backend**: Supabase (PostgreSQL + Real-time + Auth + API)
-- **Additional Backend**: NestJS with TypeScript (for complex business logic)
-- **Authentication**: Supabase Auth with Row Level Security (RLS)
-- **Real-time**: Supabase Realtime (WebSocket-based)
-- **API**: Supabase Auto-generated REST API + Custom NestJS endpoints
-- **File Storage**: Supabase Storage
-
-#### Frontend
-
-- **Framework**: Next.js 14+ with App Router
-- **Styling**: Tailwind CSS
-- **State Management**: TanStack Query (React Query)
-- **Supabase Client**: @supabase/supabase-js
-- **Maps**: Leaflet or Google Maps API
-- **Real-time**: Supabase Realtime subscriptions
-
-#### Infrastructure
-
-- **Development**: Docker containers (optional for local NestJS)
-- **Database**: Supabase PostgreSQL (Cloud-hosted)
-- **Authentication**: Supabase Auth
-- **Real-time**: Supabase Realtime
-- **File Storage**: Supabase Storage
-- **Hosting**: Vercel (Frontend) + Railway/Render (NestJS if needed)
-
-### 2.2 Updated System Architecture Diagram
-
-```
+2.2 System Architecture Diagram
 ┌─────────────────────────────────────────────────────────────┐
-│                     Frontend (Next.js)                     │
+│ Frontend (Next.js) │
 ├─────────────────┬─────────────────┬─────────────────────────┤
-│   Admin Panel   │  Public Portal  │    Real-time Updates    │
-│   - Login       │  - Track Trains │    - Supabase Client    │
-│   - Route CRUD  │  - View ETAs    │    - Realtime Subs      │
-│   - Dashboard   │  - Station Info │    - Live Location      │
+│ Admin Panel │ Public Portal │ Real-time Updates │
+│ - Login │ - Track Trains │ - Supabase Client │
+│ - Route CRUD │ - View ETAs │ - Realtime Subs │
+│ - Dashboard │ - Station Info │ - Live Location │
 └─────────────────┴─────────────────┴─────────────────────────┘
-                           │
-                    Supabase Client SDK
-                           │
+│
+Supabase Client SDK
+│
 ┌─────────────────────────────────────────────────────────────┐
-│                    Supabase Platform                       │
+│ Supabase Platform │
 ├─────────────────┬─────────────────┬─────────────────────────┤
-│  Supabase Auth  │ Auto-gen APIs   │   Supabase Realtime     │
-│  - JWT Auth     │ - REST APIs     │   - WebSocket Gateway   │
-│  - RLS Policies │ - GraphQL       │   - Live Subscriptions  │
-│  - User Mgmt    │ - Validation    │   - Broadcast/Presence  │
+│ Supabase Auth │ Auto-gen APIs │ Supabase Realtime │
+│ - JWT Auth │ - REST APIs │ - WebSocket Gateway │
+│ - RLS Policies │ - GraphQL │ - Live Subscriptions │
+│ - User Mgmt │ - Validation │ - Broadcast/Presence │
 └─────────────────┴─────────────────┴─────────────────────────┘
-                           │
-                    Direct DB Connection
-                           │
+│
+Direct DB Connection
+│
 ┌─────────────────────────────────────────────────────────────┐
-│              Supabase PostgreSQL Database                  │
+│ Supabase PostgreSQL Database │
 ├─────────────────┬─────────────────┬─────────────────────────┤
-│     Users       │     Routes      │     Locations           │
-│   - Auth Users  │   - Stations    │   - Live Data           │
-│   - Profiles    │   - Distances   │   - Historical          │
-│   - RLS Rules   │   - RLS Rules   │   - RLS Rules           │
+│ Users │ Routes │ Locations │
+│ - Auth Users │ - Stations │ - Live Data │
+│ - Profiles │ - Distances │ - Historical │
+│ - RLS Rules │ - RLS Rules │ - RLS Rules │
 └─────────────────┴─────────────────┴─────────────────────────┘
-                           │
-                    HTTP/WebSocket (Optional)
-                           │
+│
+HTTP/WebSocket (Optional)
+│
 ┌─────────────────────────────────────────────────────────────┐
-│            Custom NestJS Service (Optional)                │
+│ Custom NestJS Service (Optional) │
 ├─────────────────┬─────────────────┬─────────────────────────┤
-│   ETA Engine    │  Complex Logic  │   IoT Data Processor    │
-│   - Algorithms  │  - Validations  │   - Data Transformation │
-│   - ML Models   │  - Workflows    │   - Batch Processing    │
-│   - Caching     │  - Scheduling   │   - Error Handling      │
+│ ETA Engine │ Complex Logic │ IoT Data Processor │
+│ - Algorithms │ - Validations │ - Data Transformation │
+│ - ML Models │ - Workflows │ - Batch Processing │
+│ - Caching │ - Scheduling │ - Error Handling │
 └─────────────────┴─────────────────┴─────────────────────────┘
-                           │
-                    IoT Data Stream
-                           │
+│
+IoT Data Stream
+│
 ┌─────────────────────────────────────────────────────────────┐
-│                IoT Simulation Layer                         │
+│ IoT Simulation Layer │
 ├─────────────────┬─────────────────┬─────────────────────────┤
-│  GPS Simulator  │  Fleet Manager  │   Data Generator        │
-│  - Location     │  - Multi-train  │   - Realistic Movement  │
-│  - Speed        │  - Scheduling   │   - Weather Effects     │
-│  - Status       │  - Monitoring   │   - Station Stops       │
+│ GPS Simulator │ Fleet Manager │ Data Generator │
+│ - Location │ - Multi-train │ - Realistic Movement │
+│ - Speed │ - Scheduling │ - Weather Effects │
+│ - Status │ - Monitoring │ - Station Stops │
 └─────────────────┴─────────────────┴─────────────────────────┘
-```
 
-## 3. Supabase Database Design
-
-### 3.1 Authentication Setup
-
-Supabase handles user authentication automatically. We'll extend it with profiles:
-
-```sql
--- Enable RLS on all tables
-ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
+3. Supabase Database Design
+   3.1 Authentication Setup
+   Supabase handles user authentication automatically. We'll extend it with profiles:
+   -- Enable RLS on all tables
+   ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
 
 -- User profiles table (extends Supabase auth.users)
 CREATE TABLE public.profiles (
-    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-    email VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'admin',
-    full_name VARCHAR(255),
-    avatar_url VARCHAR(500),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+email VARCHAR(255) NOT NULL,
+role VARCHAR(50) DEFAULT 'admin',
+full_name VARCHAR(255),
+avatar_url VARCHAR(500),
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- RLS Policies for profiles
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles
-    FOR SELECT USING (true);
+FOR SELECT USING (true);
 
 CREATE POLICY "Users can insert their own profile" ON profiles
-    FOR INSERT WITH CHECK (auth.uid() = id);
+FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can update their own profile" ON profiles
-    FOR UPDATE USING (auth.uid() = id);
-```
+FOR UPDATE USING (auth.uid() = id);
 
-### 3.2 Updated Database Schema with RLS
-
-#### Routes Table
-
-```sql
+3.2 Database Schema with RLS
+Routes Table
 CREATE TABLE public.routes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    train_number VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    start_time TIME,
-    end_time TIME,
-    created_by UUID REFERENCES auth.users(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+train_number VARCHAR(50) UNIQUE NOT NULL,
+name VARCHAR(255) NOT NULL,
+is_active BOOLEAN DEFAULT true,
+start_time TIME,
+end_time TIME,
+created_by UUID REFERENCES auth.users(id),
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Enable RLS
@@ -161,49 +145,46 @@ ALTER TABLE public.routes ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Routes are viewable by everyone" ON routes
-    FOR SELECT USING (true);
+FOR SELECT USING (true);
 
 CREATE POLICY "Only admins can insert routes" ON routes
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
-        )
-    );
+FOR INSERT WITH CHECK (
+EXISTS (
+SELECT 1 FROM profiles
+WHERE profiles.id = auth.uid()
+AND profiles.role = 'admin'
+)
+);
 
 CREATE POLICY "Only admins can update routes" ON routes
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
-        )
-    );
+FOR UPDATE USING (
+EXISTS (
+SELECT 1 FROM profiles
+WHERE profiles.id = auth.uid()
+AND profiles.role = 'admin'
+)
+);
 
 CREATE POLICY "Only admins can delete routes" ON routes
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
-        )
-    );
-```
+FOR DELETE USING (
+EXISTS (
+SELECT 1 FROM profiles
+WHERE profiles.id = auth.uid()
+AND profiles.role = 'admin'
+)
+);
 
-#### Stations Table
-
-```sql
+Stations Table
 CREATE TABLE public.stations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    code VARCHAR(10) UNIQUE NOT NULL,
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    city VARCHAR(100) NOT NULL,
-    state VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+name VARCHAR(255) NOT NULL,
+code VARCHAR(10) UNIQUE NOT NULL,
+latitude DECIMAL(10, 8) NOT NULL,
+longitude DECIMAL(11, 8) NOT NULL,
+city VARCHAR(100) NOT NULL,
+province VARCHAR(100) NOT NULL,
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Enable RLS
@@ -211,31 +192,28 @@ ALTER TABLE public.stations ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Stations are viewable by everyone" ON stations
-    FOR SELECT USING (true);
+FOR SELECT USING (true);
 
 CREATE POLICY "Only admins can modify stations" ON stations
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
-        )
-    );
-```
+FOR ALL USING (
+EXISTS (
+SELECT 1 FROM profiles
+WHERE profiles.id = auth.uid()
+AND profiles.role = 'admin'
+)
+);
 
-#### Route_Stations Junction Table
-
-```sql
+Route_Stations Junction Table
 CREATE TABLE public.route_stations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    route_id UUID REFERENCES routes(id) ON DELETE CASCADE,
-    station_id UUID REFERENCES stations(id),
-    sequence INTEGER NOT NULL,
-    distance_from_start DECIMAL(8, 2) NOT NULL,
-    estimated_duration INTEGER, -- minutes from start
-    stop_duration INTEGER DEFAULT 2, -- minutes
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(route_id, sequence)
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+route_id UUID REFERENCES routes(id) ON DELETE CASCADE,
+station_id UUID REFERENCES stations(id),
+sequence INTEGER NOT NULL,
+distance_from_start DECIMAL(8, 2) NOT NULL,
+estimated_duration INTEGER, -- minutes from start
+stop_duration INTEGER DEFAULT 2, -- minutes
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+UNIQUE(route_id, sequence)
 );
 
 -- Enable RLS
@@ -243,35 +221,31 @@ ALTER TABLE public.route_stations ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Route stations are viewable by everyone" ON route_stations
-    FOR SELECT USING (true);
+FOR SELECT USING (true);
 
 CREATE POLICY "Only admins can modify route stations" ON route_stations
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
-        )
-    );
-```
+FOR ALL USING (
+EXISTS (
+SELECT 1 FROM profiles
+WHERE profiles.id = auth.uid()
+AND profiles.role = 'admin'
+)
+);
 
-#### Live_Locations Table (Real-time enabled)
-
-```sql
+Live_Locations Table (Real-time enabled)
 CREATE TABLE public.live_locations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    train_number VARCHAR(50) NOT NULL,
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    speed DECIMAL(5, 2) DEFAULT 0,
-    heading DECIMAL(5, 2) DEFAULT 0,
-    accuracy DECIMAL(5, 2) DEFAULT 0,
-    device_id VARCHAR(100),
-    battery_level INTEGER,
-    signal_strength INTEGER,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+train_number VARCHAR(50) NOT NULL,
+latitude DECIMAL(10, 8) NOT NULL,
+longitude DECIMAL(11, 8) NOT NULL,
+speed DECIMAL(5, 2) DEFAULT 0,
+heading DECIMAL(5, 2) DEFAULT 0,
+accuracy DECIMAL(5, 2) DEFAULT 0,
+device_id VARCHAR(100),
+signal_strength INTEGER,
+timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for performance
@@ -283,29 +257,26 @@ ALTER TABLE public.live_locations ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Live locations are viewable by everyone" ON live_locations
-    FOR SELECT USING (true);
+FOR SELECT USING (true);
 
 -- Allow IoT devices to insert (you might want to create a service role for this)
 CREATE POLICY "IoT devices can insert location data" ON live_locations
-    FOR INSERT WITH CHECK (true); -- This should be more restrictive in production
+FOR INSERT WITH CHECK (true); -- This should be more restrictive in production
 
 -- Enable Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE live_locations;
-```
 
-#### Location_History Table
-
-```sql
+Location_History Table
 CREATE TABLE public.location_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    train_number VARCHAR(50) NOT NULL,
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    speed DECIMAL(5, 2) DEFAULT 0,
-    heading DECIMAL(5, 2) DEFAULT 0,
-    device_id VARCHAR(100),
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+train_number VARCHAR(50) NOT NULL,
+latitude DECIMAL(10, 8) NOT NULL,
+longitude DECIMAL(11, 8) NOT NULL,
+speed DECIMAL(5, 2) DEFAULT 0,
+heading DECIMAL(5, 2) DEFAULT 0,
+device_id VARCHAR(100),
+timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes
@@ -316,25 +287,23 @@ ALTER TABLE public.location_history ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Location history is viewable by everyone" ON location_history
-    FOR SELECT USING (true);
+FOR SELECT USING (true);
 
 CREATE POLICY "Only system can insert location history" ON location_history
-    FOR INSERT WITH CHECK (true); -- Restrict this in production
-```
+FOR INSERT WITH CHECK (true); -- Restrict this in production
 
-### 3.3 Database Functions and Triggers
-
-#### Auto-update timestamps
-
-```sql
+3.3 Database Functions and Triggers
+Auto-update timestamps
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
+NEW.updated_at = NOW();
+RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+
+$$
+LANGUAGE plpgsql;
 
 -- Apply to relevant tables
 CREATE TRIGGER update_routes_updated_at
@@ -351,36 +320,34 @@ CREATE TRIGGER update_live_locations_updated_at
     BEFORE UPDATE ON live_locations
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-```
 
-#### Archive old location data
-
-```sql
+Archive old location data
 -- Function to archive old location data
 CREATE OR REPLACE FUNCTION archive_old_locations()
-RETURNS void AS $$
+RETURNS void AS
+$$
+
 BEGIN
-    -- Move locations older than 24 hours to history
-    INSERT INTO location_history (
-        train_number, latitude, longitude, speed, heading, device_id, timestamp
-    )
-    SELECT
-        train_number, latitude, longitude, speed, heading, device_id, timestamp
-    FROM live_locations
-    WHERE timestamp < NOW() - INTERVAL '24 hours';
+-- Move locations older than 24 hours to history
+INSERT INTO location_history (
+train_number, latitude, longitude, speed, heading, device_id, timestamp
+)
+SELECT
+train_number, latitude, longitude, speed, heading, device_id, timestamp
+FROM live_locations
+WHERE timestamp < NOW() - INTERVAL '24 hours';
 
     -- Delete old records from live_locations
     DELETE FROM live_locations
     WHERE timestamp < NOW() - INTERVAL '24 hours';
+
 END;
-$$ LANGUAGE plpgsql;
-```
 
-## 4. Supabase Integration
+$$
+LANGUAGE plpgsql;
 
-### 4.1 Frontend Supabase Client Setup
-
-```typescript
+4. Supabase Integration
+4.1 Frontend Supabase Client Setup
 // lib/supabase.ts
 import { createClient } from '@supabase/supabase-js';
 
@@ -455,7 +422,6 @@ export interface Database {
           heading: number;
           accuracy: number;
           device_id: string | null;
-          battery_level: number | null;
           signal_strength: number | null;
           timestamp: string;
           created_at: string;
@@ -469,7 +435,6 @@ export interface Database {
           heading?: number;
           accuracy?: number;
           device_id?: string | null;
-          battery_level?: number | null;
           signal_strength?: number | null;
           timestamp: string;
         };
@@ -479,7 +444,6 @@ export interface Database {
           speed?: number;
           heading?: number;
           accuracy?: number;
-          battery_level?: number | null;
           signal_strength?: number | null;
         };
       };
@@ -491,11 +455,8 @@ export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Route = Database['public']['Tables']['routes']['Row'];
 export type LiveLocation =
   Database['public']['Tables']['live_locations']['Row'];
-```
 
-### 4.2 Authentication Hook
-
-```typescript
+4.2 Authentication Hook
 // hooks/useAuth.ts
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
@@ -566,11 +527,8 @@ export function useAuth() {
     isAdmin: profile?.role === 'admin',
   };
 }
-```
 
-### 4.3 Real-time Location Tracking
-
-```typescript
+4.3 Real-time Location Tracking
 // hooks/useTrainTracking.ts
 import { useEffect, useState } from 'react';
 import { supabase, LiveLocation } from '@/lib/supabase';
@@ -631,11 +589,8 @@ export function useTrainTracking(trainNumber: string) {
 
   return { location, loading, error };
 }
-```
 
-### 4.4 Route Management with Supabase
-
-```typescript
+4.4 Route Management with Supabase
 // hooks/useRoutes.ts
 import { useState, useEffect } from 'react';
 import { supabase, Route } from '@/lib/supabase';
@@ -663,7 +618,7 @@ export function useRoutes() {
             latitude,
             longitude,
             city,
-            state
+            province
           )
         )
       `,
@@ -728,15 +683,10 @@ export function useRoutes() {
     refetch: fetchRoutes,
   };
 }
-```
 
-## 5. Updated API Design
-
-### 5.1 Supabase Auto-generated APIs
-
+5. API Design
+5.1 Supabase Auto-generated APIs
 Most CRUD operations will use Supabase's auto-generated REST API:
-
-```typescript
 // Example API calls using Supabase client
 
 // GET all routes
@@ -761,8 +711,8 @@ const { data: route } = await supabase
 const { data: newRoute } = await supabase
   .from('routes')
   .insert({
-    train_number: 'TRN_001',
-    name: 'Express Train',
+    train_number: 'SLR_001',
+    name: 'Colombo to Kandy',
   })
   .select()
   .single();
@@ -770,22 +720,17 @@ const { data: newRoute } = await supabase
 // UPDATE route
 const { data: updatedRoute } = await supabase
   .from('routes')
-  .update({ name: 'Updated Express' })
+  .update({ name: 'Updated Colombo to Kandy' })
   .eq('id', routeId)
   .select()
   .single();
 
 // DELETE route
 const { error } = await supabase.from('routes').delete().eq('id', routeId);
-```
 
-### 5.2 Custom NestJS APIs (Optional)
-
+5.2 Custom NestJS APIs (Optional)
 For complex business logic that can't be handled by Supabase alone:
-
-#### POST /api/locations/update (IoT Endpoint)
-
-```typescript
+POST /api/locations/update (IoT Endpoint)
 // Custom NestJS endpoint for IoT data processing
 @Post('locations/update')
 async updateLocation(@Body() locationData: IoTLocationData) {
@@ -805,11 +750,8 @@ async updateLocation(@Body() locationData: IoTLocationData) {
 
   return { status: 'success', timestamp: new Date().toISOString() }
 }
-```
 
-#### GET /api/analytics/route-performance
-
-```typescript
+GET /api/analytics/route-performance
 // Custom analytics endpoint
 @Get('analytics/route-performance')
 async getRoutePerformance(@Query('routeId') routeId: string) {
@@ -820,13 +762,9 @@ async getRoutePerformance(@Query('routeId') routeId: string) {
 
   return performance
 }
-```
 
-## 6. Real-time Features with Supabase
-
-### 6.1 Live Location Updates
-
-```typescript
+6. Real-time Features with Supabase
+6.1 Live Location Updates
 // Real-time location subscription
 const TrainMap = ({ trainNumber }: { trainNumber: string }) => {
   const [location, setLocation] = useState<LiveLocation | null>(null)
@@ -864,11 +802,8 @@ const TrainMap = ({ trainNumber }: { trainNumber: string }) => {
     </div>
   )
 }
-```
 
-### 6.2 Broadcast Updates
-
-```typescript
+6.2 Broadcast Updates
 // Broadcast system-wide updates
 const broadcastTrainStatus = async (trainNumber: string, status: string) => {
   const channel = supabase.channel('train-status');
@@ -897,13 +832,9 @@ useEffect(() => {
 
   return () => channel.unsubscribe();
 }, []);
-```
 
-## 7. Updated Deployment Architecture
-
-### 7.1 Simplified Deployment with Supabase
-
-```yaml
+7. Deployment Architecture
+7.1 Simplified Deployment with Supabase
 # docker-compose.yml (for local development only)
 version: '3.8'
 services:
@@ -924,39 +855,28 @@ services:
       - SUPABASE_URL=your-supabase-url
       - SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
       - SUPABASE_ANON_KEY=your-anon-key
-```
 
-### 7.2 Production Deployment
+7.2 Production Deployment
+Supabase Configuration
 
-#### Supabase Configuration
+Database: Automatically managed PostgreSQL
+Authentication: Built-in user management
+Real-time: WebSocket connections handled
+Storage: File uploads if needed
+Edge Functions: For serverless logic (alternative to NestJS)
 
-1. **Database**: Automatically managed PostgreSQL
-2. **Authentication**: Built-in user management
-3. **Real-time**: WebSocket connections handled
-4. **Storage**: File uploads if needed
-5. **Edge Functions**: For serverless logic (alternative to NestJS)
-
-#### Frontend Deployment (Vercel)
-
-```bash
+Frontend Deployment (Vercel)
 # Environment variables
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
 
-#### Custom API Service (if needed)
-
-```bash
+Custom API Service (if needed)
 # Railway/Render deployment
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
 
-## 8. Security with Supabase
-
-### 8.1 Row Level Security (RLS) Policies
-
-```sql
+8. Security with Supabase
+8.1 Row Level Security (RLS) Policies
 -- Admin-only access for route management
 CREATE POLICY "Admin route access" ON routes
   FOR ALL USING (
@@ -972,11 +892,8 @@ CREATE POLICY "Service location write" ON live_locations
   FOR INSERT WITH CHECK (
     auth.jwt() ->> 'role' = 'service_role'
   );
-```
 
-### 8.2 Authentication & Authorization
-
-```typescript
+8.2 Authentication & Authorization
 // Middleware for admin routes
 const requireAdmin = async (req: NextRequest) => {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -1005,13 +922,9 @@ const requireAdmin = async (req: NextRequest) => {
 
   return null; // Continue to handler
 };
-```
 
-## 9. Performance Optimization with Supabase
-
-### 9.1 Database Optimization
-
-```sql
+9. Performance Optimization with Supabase
+9.1 Database Optimization
 -- Optimized indexes
 CREATE INDEX CONCURRENTLY idx_live_locations_train_time
 ON live_locations(train_number, timestamp DESC);
@@ -1022,11 +935,8 @@ ON route_stations(route_id, sequence);
 -- Partial indexes for active routes
 CREATE INDEX CONCURRENTLY idx_routes_active
 ON routes(train_number) WHERE is_active = true;
-```
 
-### 9.2 Real-time Optimization
-
-```typescript
+9.2 Real-time Optimization
 // Optimized real-time subscriptions
 const useOptimizedTracking = (trainNumber: string) => {
   const [location, setLocation] = useState<LiveLocation | null>(null);
@@ -1080,11 +990,8 @@ const useOptimizedTracking = (trainNumber: string) => {
 
   return { location, isConnected };
 };
-```
 
-### 9.3 Caching Strategy
-
-```typescript
+9.3 Caching Strategy
 // React Query with Supabase for optimal caching
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -1156,13 +1063,9 @@ const useRoutesWithCache = () => {
 
   return { ...routesQuery, updateRoute: updateRouteMutation };
 };
-```
 
-## 10. IoT Integration with Supabase
-
-### 10.1 IoT Data Ingestion
-
-```typescript
+10. IoT Integration with Supabase
+10.1 IoT Data Ingestion
 // IoT Service for sending location data to Supabase
 class IoTLocationService {
   private supabase: SupabaseClient;
@@ -1222,11 +1125,8 @@ class IoTLocationService {
     }
   }
 }
-```
 
-### 10.2 Enhanced IoT Simulator
-
-```typescript
+10.2 Enhanced IoT Simulator
 // Enhanced IoT simulator with Supabase integration
 class AdvancedTrainSimulator {
   private locationService: IoTLocationService;
@@ -1262,7 +1162,6 @@ class AdvancedTrainSimulator {
         heading: this.currentHeading,
         accuracy: deviceData.accuracy,
         device_id: this.trainConfig.deviceId,
-        battery_level: deviceData.batteryLevel,
         signal_strength: deviceData.signalStrength,
         timestamp: new Date().toISOString(),
       };
@@ -1309,7 +1208,6 @@ class AdvancedTrainSimulator {
     // Simulate realistic device characteristics
     return {
       accuracy: 3 + Math.random() * 7,
-      batteryLevel: Math.max(0, this.batteryLevel - 0.1), // Gradual drain
       signalStrength: -50 - Math.random() * 40, // -50 to -90 dBm
     };
   }
@@ -1318,15 +1216,10 @@ class AdvancedTrainSimulator {
     this.isRunning = false;
   }
 }
-```
 
-## 11. Advanced Features with Supabase
-
-### 11.1 Supabase Edge Functions
-
+11. Advanced Features with Supabase
+11.1 Supabase Edge Functions
 Instead of NestJS, you can use Supabase Edge Functions for serverless logic:
-
-```typescript
 // supabase/functions/calculate-eta/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -1379,7 +1272,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
-    });
+    );
   }
 });
 
@@ -1409,11 +1302,8 @@ function calculateAdvancedETA(
     averageSpeed: currentSpeed,
   };
 }
-```
 
-### 11.2 Real-time Dashboard with Supabase
-
-```typescript
+11.2 Real-time Dashboard with Supabase
 // Real-time admin dashboard component
 const AdminDashboard = () => {
   const [trainStatuses, setTrainStatuses] = useState<TrainStatus[]>([])
@@ -1484,11 +1374,8 @@ const AdminDashboard = () => {
     </div>
   )
 }
-```
 
-### 11.3 Advanced Analytics with Supabase
-
-```sql
+11.3 Advanced Analytics with Supabase
 -- Create analytics views and functions in Supabase
 
 -- View: Train performance metrics
@@ -1568,13 +1455,9 @@ BEGIN
   ORDER BY tracking_sessions DESC;
 END;
 $ LANGUAGE plpgsql;
-```
 
-## 12. Testing Strategy with Supabase
-
-### 12.1 Database Testing
-
-```typescript
+12. Testing Strategy with Supabase
+12.1 Database Testing
 // Test setup with Supabase Test Client
 import { createClient } from '@supabase/supabase-js';
 
@@ -1606,20 +1489,20 @@ describe('Route Management', () => {
       .from('stations')
       .insert([
         {
-          name: 'Station A',
-          code: 'STA',
-          latitude: 12.9716,
-          longitude: 77.5946,
-          city: 'City A',
-          state: 'State A',
+          name: 'Colombo Fort',
+          code: 'CMB',
+          latitude: 6.9333,
+          longitude: 79.8500,
+          city: 'Colombo',
+          province: 'Western',
         },
         {
-          name: 'Station B',
-          code: 'STB',
-          latitude: 13.0827,
-          longitude: 80.2707,
-          city: 'City B',
-          state: 'State B',
+          name: 'Kandy',
+          code: 'KND',
+          latitude: 7.2906,
+          longitude: 80.6337,
+          city: 'Kandy',
+          province: 'Central',
         },
       ])
       .select();
@@ -1628,8 +1511,8 @@ describe('Route Management', () => {
     const { data: route } = await supabaseTest
       .from('routes')
       .insert({
-        train_number: 'TEST_001',
-        name: 'Test Route',
+        train_number: 'SLR_001',
+        name: 'Colombo to Kandy',
       })
       .select()
       .single();
@@ -1648,7 +1531,7 @@ describe('Route Management', () => {
           route_id: route.id,
           station_id: stations[1].id,
           sequence: 2,
-          distance_from_start: 100,
+          distance_from_start: 120,
         },
       ])
       .select();
@@ -1658,11 +1541,8 @@ describe('Route Management', () => {
     expect(routeStations[1].sequence).toBe(2);
   });
 });
-```
 
-### 12.2 Real-time Testing
-
-```typescript
+12.2 Real-time Testing
 // Test real-time subscriptions
 describe('Real-time Location Updates', () => {
   it('should receive location updates in real-time', async () => {
@@ -1689,9 +1569,9 @@ describe('Real-time Location Updates', () => {
 
     // Insert test location
     const testLocation = {
-      train_number: 'TEST_001',
-      latitude: 12.9716,
-      longitude: 77.5946,
+      train_number: 'SLR_001',
+      latitude: 6.9333,
+      longitude: 79.8500,
       speed: 60,
       timestamp: new Date().toISOString(),
     };
@@ -1702,18 +1582,14 @@ describe('Real-time Location Updates', () => {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     expect(receivedUpdates).toHaveLength(1);
-    expect(receivedUpdates[0].train_number).toBe('TEST_001');
+    expect(receivedUpdates[0].train_number).toBe('SLR_001');
 
     subscription.unsubscribe();
   });
 });
-```
 
-## 13. Security Best Practices with Supabase
-
-### 13.1 Advanced RLS Policies
-
-```sql
+13. Security Best Practices with Supabase
+13.1 Advanced RLS Policies
 -- Time-based access control
 CREATE POLICY "Admin access during business hours" ON routes
   FOR ALL TO authenticated
@@ -1753,11 +1629,8 @@ CREATE POLICY "Rate limited route creation" ON routes
     auth.jwt() ->> 'role' = 'admin' AND
     check_rate_limit(auth.uid(), 'route_create', 10)
   );
-```
 
-### 13.2 Audit Logging
-
-```sql
+13.2 Audit Logging
 -- Audit log table
 CREATE TABLE audit_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1806,13 +1679,9 @@ CREATE TRIGGER routes_audit_trigger
 CREATE TRIGGER stations_audit_trigger
   AFTER INSERT OR UPDATE OR DELETE ON stations
   FOR EACH ROW EXECUTE FUNCTION audit_trigger();
-```
 
-## 14. Monitoring and Analytics with Supabase
-
-### 14.1 Custom Metrics Dashboard
-
-```typescript
+14. Monitoring and Analytics with Supabase
+14.1 Custom Metrics Dashboard
 // Supabase metrics collection
 const useSystemMetrics = () => {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null)
@@ -1832,13 +1701,12 @@ const useSystemMetrics = () => {
       // Get system health
       const { data: systemHealth } = await supabase
         .from('live_locations')
-        .select('device_id, battery_level, signal_strength')
+        .select('device_id, signal_strength')
         .gte('timestamp', new Date(Date.now() - 10 * 60 * 1000).toISOString())
 
       setMetrics({
         activeTrains: activeTrains || 0,
         routePerformance: routePerformance || [],
-        avgBattery: systemHealth?.reduce((sum, d) => sum + (d.battery_level || 0), 0) / (systemHealth?.length || 1),
         avgSignal: systemHealth?.reduce((sum, d) => sum + (d.signal_strength || 0), 0) / (systemHealth?.length || 1)
       })
     }
@@ -1867,12 +1735,6 @@ const MetricsDashboard = () => {
         trend={"+5% from yesterday"}
       />
       <MetricCard
-        title="Avg Battery"
-        value={`${metrics.avgBattery.toFixed(1)}%`}
-        icon="🔋"
-        trend={metrics.avgBattery > 80 ? "Good" : "Monitor"}
-      />
-      <MetricCard
         title="Signal Strength"
         value={`${metrics.avgSignal.toFixed(0)} dBm`}
         icon="📡"
@@ -1887,27 +1749,25 @@ const MetricsDashboard = () => {
     </div>
   )
 }
-```
 
-## 15. Conclusion
+15. Conclusion
+This updated system design leverages Supabase's comprehensive platform to significantly simplify the architecture while providing robust features tailored for Sri Lankan Railways:
+Key Benefits of Supabase Integration:
 
-This updated system design leverages Supabase's comprehensive platform to significantly simplify the architecture while providing robust features:
+Simplified Architecture: Single platform for database, auth, real-time, and API
+Built-in Security: Row Level Security policies protect data automatically
+Real-time by Default: WebSocket connections handled seamlessly
+Instant APIs: Auto-generated REST and GraphQL APIs
+Scalable Infrastructure: Managed PostgreSQL with built-in scaling
+Developer Experience: Type-safe client libraries and excellent tooling
 
-### Key Benefits of Supabase Integration:
+Recommended Implementation Approach:
 
-1. **Simplified Architecture**: Single platform for database, auth, real-time, and API
-2. **Built-in Security**: Row Level Security policies protect data automatically
-3. **Real-time by Default**: WebSocket connections handled seamlessly
-4. **Instant APIs**: Auto-generated REST and GraphQL APIs
-5. **Scalable Infrastructure**: Managed PostgreSQL with built-in scaling
-6. **Developer Experience**: Type-safe client libraries and excellent tooling
+Phase 1: Core functionality using Supabase auto-generated APIs
+Phase 2: Add real-time tracking with Supabase Realtime
+Phase 3: Implement advanced features with Edge Functions
+Phase 4: Add analytics and monitoring dashboards
+Phase 5: Scale with custom business logic if needed
 
-### Recommended Implementation Approach:
-
-1. **Phase 1**: Core functionality using Supabase auto-generated APIs
-2. **Phase 2**: Add real-time tracking with Supabase Realtime
-3. **Phase 3**: Implement advanced features with Edge Functions
-4. **Phase 4**: Add analytics and monitoring dashboards
-5. **Phase 5**: Scale with custom business logic if needed
-
-This architecture provides a solid foundation that can handle both simple tracking needs and complex railway management requirements while maintaining excellent performance and security standards.
+This architecture provides a solid foundation that can handle both simple tracking needs and complex railway management requirements while maintaining excellent performance and security standards for Sri Lankan Railways.
+$$

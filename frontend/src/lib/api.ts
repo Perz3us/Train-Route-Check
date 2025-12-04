@@ -2,7 +2,7 @@
 import Cookies from "js-cookie";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export interface Route {
   id: string;
@@ -32,7 +32,7 @@ export interface RouteStation {
     latitude: number;
     longitude: number;
     city: string;
-    state: string;
+    province: string;
   };
 }
 
@@ -325,6 +325,17 @@ export const stationsApi = {
   },
 };
 
+export interface Train {
+  id: string;
+  name: string;
+  trainNumber: string;
+  type: string;
+  capacity: number | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Metrics API
 export const metricsApi = {
   getSystemMetrics: async (): Promise<SystemMetrics> => {
@@ -335,6 +346,82 @@ export const metricsApi = {
       return await handleResponse(response);
     } catch (error) {
       console.error("Failed to fetch system metrics:", error);
+      throw error;
+    }
+  },
+};
+
+// Trains API
+export const trainsApi = {
+  getAll: async (): Promise<Train[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/trains`, {
+        headers: getDefaultHeaders(),
+      });
+      const result = await handleResponse(response);
+      return result.data || result;
+    } catch (error) {
+      console.error("Failed to fetch trains:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id: string): Promise<Train> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/trains/${id}`, {
+        headers: getDefaultHeaders(),
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error(`Failed to fetch train ${id}:`, error);
+      throw error;
+    }
+  },
+
+  create: async (
+    train: Omit<Train, "id" | "created_at" | "updated_at">
+  ): Promise<Train> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/trains`, {
+        method: "POST",
+        headers: getDefaultHeaders(),
+        body: JSON.stringify(train),
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error("Failed to create train:", error);
+      throw error;
+    }
+  },
+
+  update: async (
+    id: string,
+    train: Partial<Omit<Train, "id" | "created_at" | "updated_at">>
+  ): Promise<Train> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/trains/${id}`, {
+        method: "PATCH",
+        headers: getDefaultHeaders(),
+        body: JSON.stringify(train),
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error(`Failed to update train ${id}:`, error);
+      throw error;
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/trains/${id}`, {
+        method: "DELETE",
+        headers: getDefaultHeaders(),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to delete train: ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`Failed to delete train ${id}:`, error);
       throw error;
     }
   },
@@ -365,6 +452,25 @@ export const liveLocationsApi = {
         `Failed to fetch latest location for train ${trainNumber}:`,
         error
       );
+      throw error;
+    }
+  },
+
+  getAllLatest: async (): Promise<LiveLocation[]> => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/live-locations/latest/all`,
+        {
+          headers: getDefaultHeaders(),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch all latest locations: ${response.status}`);
+      }
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error("Failed to fetch all latest locations:", error);
       throw error;
     }
   },

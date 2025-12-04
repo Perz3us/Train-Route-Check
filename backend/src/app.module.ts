@@ -17,6 +17,9 @@ import { AuditModule } from './modules/audit/audit.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { TrainsModule } from './modules/trains/trains.module';
+import { KafkaModule } from './modules/kafka/kafka.module';
+import { IotModule } from './modules/iot/iot.module';
 
 @Module({
   imports: [
@@ -48,6 +51,10 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     MetricsModule,
     RealtimeModule,
     AnalyticsModule,
+    AnalyticsModule,
+    TrainsModule,
+    KafkaModule,
+    IotModule,
   ],
   controllers: [],
   providers: [],

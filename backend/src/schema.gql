@@ -9,7 +9,7 @@ type Station {
   latitude: Float!
   longitude: Float!
   city: String!
-  state: String!
+  province: String!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -36,7 +36,7 @@ input CreateStationInput {
   latitude: Float!
   longitude: Float!
   city: String!
-  state: String!
+  province: String!
 }
 
 input UpdateStationInput {
@@ -45,6 +45,6 @@ input UpdateStationInput {
   latitude: Float
   longitude: Float
   city: String
-  state: String
+  province: String
   id: ID!
 }

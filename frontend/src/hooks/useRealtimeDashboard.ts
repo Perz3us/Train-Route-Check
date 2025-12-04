@@ -49,8 +49,8 @@ export function useRealtimeDashboard() {
           const newAlert: Alert = {
             id: Date.now().toString(),
             title: 'System Alert',
-            description: 'New system notification',
-            severity: 'info',
+            message: 'New system notification',
+            type: 'info',
             timestamp: new Date().toISOString(),
           };
           setAlerts((prev) => [newAlert, ...prev.slice(0, 9)]);

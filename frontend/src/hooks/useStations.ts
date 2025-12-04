@@ -9,7 +9,7 @@ export interface Station {
     latitude: number;
     longitude: number;
     city: string;
-    province: string; // Changed from 'state' to 'province' to match backend
+    province: string;
     created_at: string;
     updated_at: string;
 }

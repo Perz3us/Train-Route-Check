@@ -7,9 +7,21 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    super();
+    super({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
+    });
   }
   async onModuleInit() {
+    const url = process.env.DATABASE_URL;
+    if (url) {
+      console.log('Prisma connecting to:', url.replace(/:[^:@]*@/, ':****@'));
+    } else {
+      console.error('DATABASE_URL is not defined');
+    }
     await this.$connect();
     console.log('Db connected');
   }
