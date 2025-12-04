@@ -21,7 +21,7 @@ export class Station {
   city: string;
 
   @Field()
-  state: string;
+  province: string;
 
   @Field()
   createdAt: Date;

@@ -1,6 +1,7 @@
 
+"use client";
+
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import type { LiveLocation } from '@/lib/supabase';
 
 export function useTrainTracking(trainNumber: string) {
@@ -9,51 +10,38 @@ export function useTrainTracking(trainNumber: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch initial location
-    const fetchInitialLocation = async () => {
-      const { data, error } = await supabase
-        .from('live_locations')
-        .select('*')
-        .eq('train_number', trainNumber)
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        // No rows returned
-        setError(error.message);
-      } else {
+    const fetchLocation = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/live-locations/train/${trainNumber}/latest`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setLocation(null);
+            return;
+          }
+          throw new Error(`Failed to fetch location: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        const data = result.data || null;
+        
         setLocation(data);
+      } catch (err: any) {
+        console.error('Error fetching location:', err);
+        setError('Failed to fetch train location');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    fetchInitialLocation();
+    fetchLocation();
 
-    // Subscribe to real-time updates
-    const subscription = supabase
-      .channel(`train-${trainNumber}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'live_locations',
-          filter: `train_number=eq.${trainNumber}`,
-        },
-        (payload) => {
-          if (
-            payload.eventType === 'INSERT' ||
-            payload.eventType === 'UPDATE'
-          ) {
-            setLocation(payload.new as LiveLocation);
-          }
-        },
-      )
-      .subscribe();
+    // Set up polling for real-time updates (since we're not using Supabase realtime)
+    const interval = setInterval(fetchLocation, 5000); // Poll every 5 seconds
 
     return () => {
-      subscription.unsubscribe();
+      clearInterval(interval);
     };
   }, [trainNumber]);
 

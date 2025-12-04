@@ -3,7 +3,7 @@ import { LocationUpdate } from './types';
 
 export class IoTLocationService {
   private backendUrl: string;
-  private batchSize = 10;
+  private batchSize = 1;
   private flushInterval = 5000; // 5 seconds
   private locationBuffer: LocationUpdate[] = [];
 
@@ -31,25 +31,31 @@ export class IoTLocationService {
     try {
       // Send each location update individually to the NestJS backend
       for (const location of batch) {
-        // Transform the data to match the NestJS DTO
+        // Transform the data to match the Kafka message schema
         const transformedData = {
-          trainNumber: location.train_number,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          speed: location.speed,
+          train_id: location.train_number,
+          lat: location.latitude,
+          lng: location.longitude,
+          speed_kmph: location.speed,
           heading: location.heading,
           accuracy: location.accuracy,
-          deviceId: location.device_id,
-          batteryLevel: location.battery_level,
-          signalStrength: location.signal_strength,
+          device_id: location.device_id,
           timestamp: location.timestamp,
+          source: 'iot-simulator',
         };
 
         try {
-          await axios.post(`${this.backendUrl}/api/live-locations`, transformedData);
+          // Send to the new IoT endpoint (Kafka producer)
+          // Note: The backend has a global prefix 'api', so the path is /api/iot/location
+          await axios.post(`${this.backendUrl}/api/iot/location`, transformedData);
           console.log(`Successfully sent location update for train ${location.train_number}`);
-        } catch (error) {
-          console.error(`Failed to send location update for train ${location.train_number}:`, error.message);
+        } catch (error: any) {
+          console.log('FAILED PAYLOAD:', JSON.stringify(transformedData));
+          if (axios.isAxiosError(error) && error.response) {
+            console.log('ERROR_DETAILS:', JSON.stringify(error.response.data));
+          } else {
+            console.log('ERROR:', error.message);
+          }
           // Re-add failed items to buffer for retry
           this.locationBuffer.push(location);
         }
@@ -61,12 +67,6 @@ export class IoTLocationService {
   }
 
   // Archive old locations - this would need to be implemented in the backend
-  async archiveOldLocations() {
-    try {
-      await axios.post(`${this.backendUrl}/api/live-locations/archive`);
-      console.log('Successfully triggered archive of old locations');
-    } catch (error) {
-      console.error('Failed to archive old locations:', error.message);
-    }
-  }
+  // Archive functionality has been moved/deprecated
+  // async archiveOldLocations() { ... }
 }

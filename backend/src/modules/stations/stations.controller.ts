@@ -9,11 +9,14 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { StationsService } from './stations.service';
 import { CreateStationDto, UpdateStationDto } from './dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('stations')
+@UseGuards(JwtAuthGuard)
 export class StationsController {
   constructor(private readonly stationsService: StationsService) {}
 

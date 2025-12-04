@@ -9,9 +9,11 @@ import {
   Query,
   Logger,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { LiveLocationsService } from './live-locations.service';
 import { LiveLocationDto } from './dto/live-location.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('live-locations')
 export class LiveLocationsController {
@@ -19,23 +21,9 @@ export class LiveLocationsController {
 
   constructor(private readonly liveLocationsService: LiveLocationsService) {}
 
-  @Post()
-  async createOrUpdateLocation(@Body(ValidationPipe) locationDto: LiveLocationDto) {
-    try {
-      const result = await this.liveLocationsService.createOrUpdateLocation(locationDto);
-      return {
-        success: true,
-        data: result,
-        message: 'Location updated successfully',
-      };
-    } catch (error) {
-      this.logger.error(`Error in createOrUpdateLocation: ${error.message}`);
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
+  // POST endpoint removed to enforce data ingestion via Kafka
+  // @Post()
+  // async createOrUpdateLocation(@Body(ValidationPipe) locationDto: LiveLocationDto) { ... }
 
   @Get('train/:trainNumber/latest')
   async getLatestLocation(@Param('trainNumber') trainNumber: string) {
@@ -50,6 +38,24 @@ export class LiveLocationsController {
       };
     } catch (error) {
       this.logger.error(`Error in getLatestLocation: ${error.message}`);
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  @Get('latest/all')
+  async getAllLatestLocations() {
+    try {
+      const locations = await this.liveLocationsService.getAllLatestLocations();
+      return {
+        success: true,
+        data: locations,
+        message: 'All latest locations retrieved successfully',
+      };
+    } catch (error) {
+      this.logger.error(`Error in getAllLatestLocations: ${error.message}`);
       return {
         success: false,
         message: error.message,
@@ -79,6 +85,7 @@ export class LiveLocationsController {
   }
 
   @Post('archive')
+  @UseGuards(JwtAuthGuard)
   async archiveOldLocations() {
     try {
       const result = await this.liveLocationsService.archiveOldLocations();

@@ -34,5 +34,5 @@ export class CreateStationDto {
   @IsString()
   @IsNotEmpty()
   @Length(2, 100)
-  state: string;
+  province: string;
 }

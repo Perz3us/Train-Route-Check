@@ -16,13 +16,22 @@ export class AdvancedTrainSimulator {
     this.currentPosition = trainConfig.startPosition;
   }
 
-  async startSimulation() {
+  async startSimulation(limit?: number) {
     this.isRunning = true;
     console.log(`Starting simulation for train ${this.trainConfig.trainNumber}`);
+    let count = 0;
 
     while (this.isRunning) {
+      if (limit && count >= limit) {
+        console.log(`Reached limit of ${limit} updates. Stopping simulation.`);
+        this.stopSimulation();
+        break;
+      }
+      count++;
       // Calculate next position based on route and speed
       const nextPosition = this.calculateNextPosition();
+      this.currentPosition = nextPosition;
+      this.currentSpeed = 60 + Math.random() * 10; // Random speed between 60-70 km/h
 
       // Add realistic variations
       const locationWithNoise = this.addGPSNoise(nextPosition);
@@ -44,6 +53,7 @@ export class AdvancedTrainSimulator {
         timestamp: new Date().toISOString(),
       };
 
+      console.log('Sending payload:', JSON.stringify(locationUpdate));
       // Send to Supabase
       await this.locationService.sendLocationUpdate(locationUpdate);
       console.log(`Sent location update for train ${this.trainConfig.trainNumber}`);
@@ -62,7 +72,10 @@ export class AdvancedTrainSimulator {
     // - Weather conditions
     
     // For now, we'll just move the train in a simple pattern
-    const delta = 0.001; // Small movement increment
+    // Calculate realistic delta based on speed (approx 16.6m/s for 60km/h)
+    // 1 degree lat = ~111km = 111000m
+    // Delta for 1s at 60km/h = 16.6 / 111000 = ~0.00015
+    const delta = 0.00015; 
     return {
       latitude: this.currentPosition.latitude + delta,
       longitude: this.currentPosition.longitude + delta,
@@ -89,8 +102,8 @@ export class AdvancedTrainSimulator {
     // Simulate realistic device characteristics
     return {
       accuracy: 3 + Math.random() * 7,
-      batteryLevel: Math.max(0, this.batteryLevel - 0.1), // Gradual drain
-      signalStrength: -50 - Math.random() * 40, // -50 to -90 dBm
+      batteryLevel: Math.floor(Math.max(0, this.batteryLevel - 0.1)), // Gradual drain, integer
+      signalStrength: Math.floor(-50 - Math.random() * 40), // -50 to -90 dBm, integer
     };
   }
 

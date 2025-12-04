@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label }_from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
 import { useStations } from "@/hooks/useStations";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
